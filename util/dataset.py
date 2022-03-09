@@ -8,12 +8,8 @@ class SpermDataset(Dataset):
     def __init__(self, src, image_size, transform=None):
         # the src directory must contain 2 folders "images" and "labels"
         # which contain identical numbers of entries.
-
         self.src = src
         self.image_size = image_size
-        self.transform_basic = transforms.Compose([transforms.ToTensor(),
-                                                   transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
-                                                   ])
         self.transform = transform
         self.images = []
         self.labels = []
@@ -34,6 +30,7 @@ class SpermDataset(Dataset):
         img = cv2.resize(img, (self.image_size, self.image_size), interpolation=cv2.INTER_NEAREST)
         label = cv2.imread(self.src + "/labels/" + label_name, 0)/255
         label = cv2.resize(label, (self.image_size, self.image_size), interpolation=cv2.INTER_NEAREST)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         if self.transform is not None:
             img = self.transform(img)

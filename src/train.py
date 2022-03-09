@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
 from torchvision import datasets, models, transforms
@@ -10,20 +9,23 @@ from typing import Union, List, Dict, Any, cast
 from util.dataset import SpermDataset
 from models.v_unet import VUnet
 from util.loss import DiceLoss, DiceBCELoss, IoULoss
+from torchsummary import summary
 
 
-batch_size = 32
+batch_size = 8
 epochs = 100
 image_size = 512
 train_path = r"C:/Users/jnynt/Desktop/AifSR/data_claudia/augmented_v1_train/train"
 val_path = r"C:/Users/jnynt/Desktop/AifSR/data_claudia/augmented_v1_train/val"
 checkpoint_path = r"C:/Users/jnynt/Desktop/AifSR/model_pth/checkpoints"
 
-transform = None
+data_transform = transforms.Compose([
+          transforms.ToTensor(),
+          transforms.Normalize((0.5), (0.5))])
 
-train_dataset = SpermDataset(train_path, image_size, transform)
+train_dataset = SpermDataset(train_path, image_size, data_transform)
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-val_dataset = SpermDataset(val_path, image_size, transform)
+val_dataset = SpermDataset(val_path, image_size, data_transform)
 val_dataloader = DataLoader(val_dataset, batch_size=val_dataset.__len__(), shuffle=True)
 
 image_datasets = dict()
@@ -35,7 +37,8 @@ dataloaders['val'] = val_dataloader
 
 device = torch.device('cpu')
 net = VUnet(pretrained_path=r'C:/Users/jnynt/Desktop/AifSR/model_pth/vunet_parsed.pth')
-# net.to(device)
+summary(net, input_size=(3, 512, 512))
+net = net.to(device)
 
 optimizer = optim.Adam(net.parameters(), lr=1E-5)
 criterion = DiceBCELoss()
@@ -57,21 +60,27 @@ for epoch in range(1, epochs + 1):
         n = 0
         for data in dataloaders[phase]:
             if n % 5 == 0:
-                print('n: ', str(n))
+                print('- Batch ', str(n+1))
             images, labels = data
-            images, labels = images.to(device), labels.to(device)
+            images, labels = images.to(device).float(), labels.to(device).float()
             output = net(images)                # get result from network
+            output = torch.squeeze(output)
             loss = criterion(output, labels)    # generate DiceBCELoss loss
             output_masks = output.cpu().data.numpy().copy()
             y_mask = labels.cpu().data.numpy().copy()
-            # output_masks = (output_masks > 0.5)
-            # output = (output > 0.5)
-            acc = acc_criterion(output, labels)
+            output_masks = (output_masks > 0.5)
+            output = (output > 0.5)
+            inter = torch.dot(output.view(-1).float(), labels.view(-1))
+            union = torch.sum(output.view(-1).float()) + torch.sum(labels.view(-1)) - inter + 0.0001
+            # Calculate DICE
+            acc = inter / union
 
             optimizer.zero_grad()
             if phase == 'train':
                 loss.backward()
                 optimizer.step()
+
+            running_loss += loss.data.item()
             running_accs += acc
             n += 1
 
