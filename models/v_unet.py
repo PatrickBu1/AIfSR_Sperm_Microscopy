@@ -17,9 +17,9 @@ class VUnet(nn.Module):
         self.u3 = up_conv_block([256, 128], [128, 128], [3, 3], [1, 1], 128, 64, 2, 2)
         self.u4 = up_conv_block([128, 64], [64, 64], [3, 3], [1, 1], 0, 0, 2, 2)
         self.final = nn.Sequential(nn.Conv2d(64, 1, kernel_size=(1, 1), padding=1), nn.Sigmoid())
-
-        # The following code is for testing the pretrained classification functionalities.
         '''
+        # The following code is for testing the pretrained classification functionalities.
+
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
             nn.Linear(512 * 7 * 7, 4096),
@@ -31,7 +31,6 @@ class VUnet(nn.Module):
             nn.Linear(4096, 1000),
         )
         '''
-
         if pretrained_path is not None:
             self._load_parameters(pretrained_path)
 
@@ -61,7 +60,6 @@ class VUnet(nn.Module):
         x = self.classifier(x)
         return x
     '''
-
     def _load_parameters(self, pretrained_path):
         own_state = self.state_dict()
         pretrained_state = torch.load(pretrained_path)
@@ -71,12 +69,28 @@ class VUnet(nn.Module):
             own_state[name].copy_(param)
 
     def freeze(self):
-        print('foo')
-        # TODO: freeze decoder to make the first half not trainable
+        for param in self.d1.parameters():
+            param.requires_grad = False
+        for param in self.d2.parameters():
+            param.requires_grad = False
+        for param in self.d3.parameters():
+            param.requires_grad = False
+        for param in self.d4.parameters():
+            param.requires_grad = False
+        for param in self.d5.parameters():
+            param.requires_grad = False
 
     def unfreeze(self):
-        print('foo')
-        # TODO: vice versa
+        for param in self.d1.parameters():
+            param.requires_grad = True
+        for param in self.d2.parameters():
+            param.requires_grad = True
+        for param in self.d3.parameters():
+            param.requires_grad = True
+        for param in self.d4.parameters():
+            param.requires_grad = True
+        for param in self.d5.parameters():
+            param.requires_grad = True
 
 
 def conv_layer(ch_in, ch_out, k_size, p_size):  # A single convolutional layer with ReLU

@@ -24,7 +24,7 @@ def infer_once(model, img_dir):
 
 def main():
     img_dir = 'C:/Users/jnynt/Desktop/AifSR/test_data/random_images/dog.jpg'
-    model = models.v_unet.VUnet(pretrained_path='../models/vgg16_classifier_parsed.pth')
+    model = models.v_unet.VUnet(pretrained_path=r'C:/Users/jnynt/Desktop/AifSR/model_pth/vgg16_classifier_parsed.pth')
     # model = torchmodel.vgg16(pretrained=True, progress=True)
     infer_once(model, img_dir)
 

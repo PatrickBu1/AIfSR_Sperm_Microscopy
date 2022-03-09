@@ -6,7 +6,6 @@ import os
 
 class SpermDataset(Dataset):
     def __init__(self, src, image_size, transform=None):
-
         # the src directory must contain 2 folders "images" and "labels"
         # which contain identical numbers of entries.
 
